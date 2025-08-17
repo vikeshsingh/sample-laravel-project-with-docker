@@ -20,5 +20,15 @@ WORKDIR /var/www/html
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
+
+# CMD ["php-fpm"]
+# Copy entrypoint.sh from context root into container
+COPY /docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Make it executable
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Set as entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
 EXPOSE 9000
-CMD ["php-fpm"]

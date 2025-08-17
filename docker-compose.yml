@@ -1,19 +1,4 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: docker/8.2/Dockerfile
-    container_name: laravel_app
-    restart: unless-stopped
-    volumes:
-      - .:/var/www/html   # local code sync
-    networks:
-      - laravel
-    env_file:
-      - .env
-    depends_on:
-      - db
-
   db:
     image: mysql:8.0
     container_name: laravel_db
@@ -43,6 +28,20 @@ services:
       - app
     networks:
       - laravel
+  app:
+    build:
+      context: .
+      dockerfile: docker/8.2/Dockerfile
+    container_name: laravel_app
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html   # local code sync
+    networks:
+      - laravel
+    env_file:
+      - .env
+    depends_on:
+      - db
 
 volumes:
   db_data:
