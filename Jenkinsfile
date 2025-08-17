@@ -1,25 +1,62 @@
 pipeline {
     agent any
+
+    environment {
+        DOCKER_COMPOSE = "docker-compose"
+        APP_CONTAINER = "laravel_app"
+    }
+
     stages {
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                sh 'docker build -t myapp:${BUILD_NUMBER} .'
+                git branch: 'main', url: 'https://github.com/vikeshsingh/sample-laravel-project-with-docker.git'
             }
         }
-        stage('Deploy') {
+
+        stage('Rebuild Containers') {
             steps {
-                sh 'docker-compose up -d'
+                dir('Automated-Pipeline') {   // 👈 go inside your project folder
+                    sh '''
+                    ${DOCKER_COMPOSE} down --remove-orphans
+                    ${DOCKER_COMPOSE} build --no-cache
+                    ${DOCKER_COMPOSE} up -d
+                    '''
+                }
             }
         }
-        stage('Post-Deployment') {
+
+        stage('Wait for App to be Ready') {
             steps {
-                // Run required Docker commands after successful deployment
-                sh '''
-                    docker exec -it mycontainer some_command
-                    docker logs mycontainer --tail 50
-                    docker image prune -f  # Cleanup old images
-                '''
+                script {
+                    echo "⏳ Waiting for Laravel container to be ready..."
+                    retry(10) {
+                        sleep 5
+                        sh "docker exec ${APP_CONTAINER} php -v"
+                    }
+                }
             }
+        }
+
+        stage('Run Post-Deploy Commands') {
+            steps {
+                dir('Automated-Pipeline') {  // 👈 again inside your project folder
+                    sh '''
+                    docker exec ${APP_CONTAINER} php artisan cache:clear
+                    docker exec ${APP_CONTAINER} php artisan config:cache
+                    docker exec ${APP_CONTAINER} php artisan route:cache
+                    docker exec ${APP_CONTAINER} php artisan view:clear
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Deployment completed successfully!"
+        }
+        failure {
+            echo "❌ Deployment failed! Check logs."
         }
     }
 }
