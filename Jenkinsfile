@@ -1,58 +1,25 @@
 pipeline {
     agent any
-
-    environment {
-        DOCKER_COMPOSE = "docker-compose"
-        APP_CONTAINER = "laravel_app"
-    }
-
     stages {
-        stage('Checkout') {
+        stage('Build') {
             steps {
-                git branch: 'main', url: 'https://github.com/vikeshsingh/sample-laravel-project-with-docker.git'
+                sh 'docker build -t myapp:${BUILD_NUMBER} .'
             }
         }
-
-        stage('Rebuild Containers') {
+        stage('Deploy') {
             steps {
+                sh 'docker-compose up -d'
+            }
+        }
+        stage('Post-Deployment') {
+            steps {
+                // Run required Docker commands after successful deployment
                 sh '''
-                ${DOCKER_COMPOSE} down --remove-orphans
-                ${DOCKER_COMPOSE} build --no-cache
-                ${DOCKER_COMPOSE} up -d
+                    docker exec -it mycontainer some_command
+                    docker logs mycontainer --tail 50
+                    docker image prune -f  # Cleanup old images
                 '''
             }
-        }
-
-        stage('Wait for App to be Ready') {
-            steps {
-                script {
-                    echo "⏳ Waiting for Laravel container to be ready..."
-                    retry(10) {
-                        sleep 5
-                        sh "docker exec ${APP_CONTAINER} php -v"
-                    }
-                }
-            }
-        }
-
-        stage('Run Post-Deploy Commands') {
-            steps {
-                sh '''
-                docker exec ${APP_CONTAINER} php artisan cache:clear
-                docker exec ${APP_CONTAINER} php artisan config:cache
-                docker exec ${APP_CONTAINER} php artisan route:cache
-                docker exec ${APP_CONTAINER} php artisan view:clear
-                '''
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "✅ Deployment completed successfully!"
-        }
-        failure {
-            echo "❌ Deployment failed! Check logs."
         }
     }
 }
