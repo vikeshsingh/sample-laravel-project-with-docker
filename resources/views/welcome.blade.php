@@ -1,3 +1,3 @@
 <html>
-    testing pipeline jenkins webhook
+    testing pipeline jenkins
 </html>
