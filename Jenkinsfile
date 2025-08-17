@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE = "docker-compose"
+        DOCKER_COMPOSE = "/usr/local/bin/docker-compose"
         APP_CONTAINER = "laravel_app"
     }
 
@@ -15,7 +15,7 @@ pipeline {
 
         stage('Rebuild Containers') {
             steps {
-                dir('Automated-Pipeline') {   // 👈 go inside your project folder
+                dir('sample-laravel-project-with-docker') {   // 👈 go inside your project folder
                     sh '''
                     ${DOCKER_COMPOSE} down --remove-orphans
                     ${DOCKER_COMPOSE} build --no-cache
@@ -39,7 +39,7 @@ pipeline {
 
         stage('Run Post-Deploy Commands') {
             steps {
-                dir('Automated-Pipeline') {  // 👈 again inside your project folder
+                dir('sample-laravel-project-with-docker') {  // 👈 again inside your project folder
                     sh '''
                     docker exec ${APP_CONTAINER} php artisan cache:clear
                     docker exec ${APP_CONTAINER} php artisan config:cache
